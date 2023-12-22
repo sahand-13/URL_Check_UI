@@ -50,7 +50,6 @@ export default function MyApp(props) {
             <MotionLazyContainer>
               <ThemeColorPresets>
                 <RtlLayout>
-                  <Settings />
                   <ProgressBar />
                   {getLayout(<Component {...pageProps} />)}
                 </RtlLayout>

@@ -12,10 +12,13 @@ import Iconify from '../../components/Iconify';
 import { FormProvider, RHFTextField } from '../../components/hook-form';
 import RHFTextArea from '../../components/hook-form/RHFTextArea';
 import axiosInstance from '../../utils/axios';
+import axios from 'axios';
+import { useSnackbar } from 'notistack';
 
 // ----------------------------------------------------------------------
 
-export default function MainCheckURLForm() {
+export default function MainCheckURLForm({ SearchedRef }) {
+  const { enqueueSnackbar } = useSnackbar();
   const RegisterSchema = Yup.object().shape({
     primarySubject: Yup.string().required('First subject is required'),
     secondarySubject: Yup.string(),
@@ -39,26 +42,56 @@ export default function MainCheckURLForm() {
   } = methods;
 
   const SendRequest = (query) => {
-    axiosInstance.post(
-      'https://google.serper.dev/search',
-      JSON.stringify({
-        q: query,
-        gl: 'ir',
-        hl: 'fa',
-      }),
-      {
-        headers: {
-          //"X-API-KEY": "17551478abe27e857018d13c0dc71ca29d144c9d",
-          'X-API-KEY': 'ca4539b02b04485b90d1b00d02eef727e699709c',
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    return {
+      key: query,
+      requests: axiosInstance
+        .post(
+          'https://google.serper.dev/search',
+          JSON.stringify({
+            q: query,
+            gl: 'ir',
+            hl: 'fa',
+          }),
+          {
+            headers: {
+              //"X-API-KEY": "17551478abe27e857018d13c0dc71ca29d144c9d",
+              'X-API-KEY': '75418c0fcd175f2a64a5b9de50de5275d2e83ed5',
+              'Content-Type': 'application/json',
+            },
+          }
+        )
+        .catch((error) => enqueueSnackbar(error, { variant: 'warning' })),
+    };
   };
 
   const onSubmit = async (data) => {
     try {
-      SendRequest(data.primarySubject);
+      const Requests = new Array();
+      Requests.push(SendRequest(data.primarySubject));
+      if (data.secondarySubject) {
+        const secondarykeys = data.secondarySubject.split('\n');
+        if (secondarykeys.length) {
+          secondarykeys.forEach((key) => {
+            if (key && key.replace('​', '') !== '') {
+              Requests.push(SendRequest(key));
+            }
+          });
+        }
+      }
+      debugger;
+
+      const response = await axios.all(Requests.map((item) => item.requests));
+      const newResponse = [...response.map((item) => item?.data)];
+      if (newResponse?.length) {
+        const mainRequest = newResponse.find((x) => x.searchParameters.q === data.primarySubject);
+        const mainRequestIndex = newResponse.findIndex((item) => item?.searchParameters?.q === data.primarySubject);
+        if (SearchedRef.current) {
+          SearchedRef.current.setSubjects({
+            mainSubject: mainRequest,
+            secondarySubjects: newResponse.filter((_, index) => index !== mainRequestIndex),
+          });
+        }
+      }
     } catch (error) {
       console.error(error);
       reset();
@@ -73,7 +106,12 @@ export default function MainCheckURLForm() {
         <Stack spacing={2}>
           <FormLabel sx={{ mx: 1 }}>
             <Typography variant="button">First subject</Typography>
-            <RHFTextField name="primarySubject" placeholder="Your first subject ..." size="small" />
+            <RHFTextField
+              name="primarySubject"
+              placeholder="Your first subject ..."
+              size="small"
+              inputProps={{ dir: 'auto' }}
+            />
           </FormLabel>
           <FormLabel>
             <Typography variant="button"> Secondary subjects list</Typography>
@@ -84,7 +122,7 @@ export default function MainCheckURLForm() {
               size="small"
               placeholder="Your second subject ..."
             />
-            <Typography variant="caption">استفاده کنید Enter بزای ثبت هر کلمه از</Typography>
+            <Typography variant="caption">هر کلمه کلیدی را در یک سطر جدید وارد کنید</Typography>
           </FormLabel>
         </Stack>
         <Divider orientation="horizontal" sx={{ my: 2 }} />

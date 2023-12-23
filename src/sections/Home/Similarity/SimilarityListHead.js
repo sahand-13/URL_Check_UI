@@ -16,7 +16,7 @@ const visuallyHidden = {
   width: '1px',
 };
 
-UserListHead.propTypes = {
+SimilarityListHead.propTypes = {
   order: PropTypes.oneOf(['asc', 'desc']),
   orderBy: PropTypes.string,
   rowCount: PropTypes.number,
@@ -26,7 +26,7 @@ UserListHead.propTypes = {
   onSelectAllClick: PropTypes.func,
 };
 
-export default function UserListHead({
+export default function SimilarityListHead({
   order,
   orderBy,
   rowCount,
@@ -38,17 +38,12 @@ export default function UserListHead({
   return (
     <TableHead>
       <TableRow>
-        <TableCell padding="checkbox">
-          <Checkbox
-            indeterminate={numSelected > 0 && numSelected < rowCount}
-            checked={rowCount > 0 && numSelected === rowCount}
-            onChange={(event) => onSelectAllClick(event.target.checked)}
-          />
-        </TableCell>
+        <TableCell padding="checkbox"></TableCell>
         {headLabel.map((headCell) => (
           <TableCell
             key={headCell.id}
             align={headCell.alignRight ? 'right' : 'left'}
+            size="small"
             sortDirection={orderBy === headCell.id ? order : false}
           >
             <TableSortLabel

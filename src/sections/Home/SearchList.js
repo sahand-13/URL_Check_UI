@@ -1,5 +1,5 @@
 import { sentenceCase } from 'change-case';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 // next
 import NextLink from 'next/link';
 // @mui
@@ -17,51 +17,50 @@ import {
   Typography,
   TableContainer,
   TablePagination,
+  Divider,
+  LinearProgress,
+  Box,
+  CardContent,
 } from '@mui/material';
 
-// hooks
-import useSettings from '../../hooks/useSettings';
 // _mock_
 import { _userList } from '../../_mock';
 
 // components
-import Page from '../../components/Page';
-import Label from '../../components/Label';
+
 // import Iconify from '../../../components/Iconify';
 import Scrollbar from '../../components/Scrollbar';
 import SearchNotFound from '../../components/SearchNotFound';
 // sections
-import UserListToolbar from './UserListToolbar';
-import UserMoreMenu from './UserMoreMenu';
-import UserListHead from './UserListHead';
+import ListToolbar from './ListToolbar';
+import ListHead from './ListHead';
+import uuidv4 from '../../utils/uuidv4';
+import SimilarityList from './Similarity/SimilarityList';
 
 // ----------------------------------------------------------------------
 
 const TABLE_HEAD = [
-  { id: 'name', label: 'Name', alignRight: false },
-  { id: 'company', label: 'Company', alignRight: false },
-  { id: 'role', label: 'Role', alignRight: false },
-  { id: 'isVerified', label: 'Verified', alignRight: false },
-  { id: 'status', label: 'Status', alignRight: false },
-  { id: '' },
+  { id: 'MainSubject', label: 'Main Subject', alignRight: false },
+  { id: 'SecondarySubject', label: 'Secondary Subject', alignRight: false },
+  { id: 'Links', label: 'Links', alignRight: false },
+  { id: 'Similarity', label: 'Similarity', alignRight: false },
 ];
 
 // ----------------------------------------------------------------------
 
 // ----------------------------------------------------------------------
 
-export default function SearchList() {
+export default function SearchList({ subjects }) {
   const theme = useTheme();
+  const [comparedList, setComparedList] = useState([]);
 
-  const { themeStretch } = useSettings();
+  const [isGroupBy, setIsGroupBy] = useState(false);
 
-  const [userList, setUserList] = useState(_userList);
+  const [comparePercentage, setComparePercentage] = useState(50);
 
   const [page, setPage] = useState(0);
 
   const [order, setOrder] = useState('asc');
-
-  const [selected, setSelected] = useState([]);
 
   const [orderBy, setOrderBy] = useState('name');
 
@@ -69,34 +68,45 @@ export default function SearchList() {
 
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
+  const getSimilarity = ({ mainOrganics, subjectOrganics }) => {
+    return subjectOrganics.reduce((accumulator, currentValue) => {
+      let newAccumulator = accumulator;
+      mainOrganics.forEach((mainOrganic) => {
+        if (mainOrganic?.link === currentValue?.link) {
+          newAccumulator++;
+        }
+      });
+      return newAccumulator;
+    }, 0);
+  };
+
+  useEffect(() => {
+    if (subjects?.secondarySubjects?.length && typeof subjects?.mainSubject === 'object') {
+      const { secondarySubjects, mainSubject } = subjects;
+      setComparedList(
+        secondarySubjects.map((items, index) => {
+          const Similarity = getSimilarity({ mainOrganics: mainSubject.organic, subjectOrganics: items?.organic });
+          return {
+            id: uuidv4(),
+            MainSubject: mainSubject?.searchParameters?.q,
+            SecondarySubject: items?.searchParameters?.q,
+            Links: {
+              MainOrganicsCount: mainSubject?.organic?.length,
+              SubjectOrganicCount: items?.organic?.length,
+              Similarity,
+            },
+            SimilarityPercentage: Math.round((100 / mainSubject?.organic?.length) * Similarity),
+          };
+        })
+      );
+      setPage(0);
+    }
+  }, [subjects]);
+
   const handleRequestSort = (property) => {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
-  };
-
-  const handleSelectAllClick = (checked) => {
-    if (checked) {
-      const newSelecteds = userList.map((n) => n.name);
-      setSelected(newSelecteds);
-      return;
-    }
-    setSelected([]);
-  };
-
-  const handleClick = (name) => {
-    const selectedIndex = selected.indexOf(name);
-    let newSelected = [];
-    if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, name);
-    } else if (selectedIndex === 0) {
-      newSelected = newSelected.concat(selected.slice(1));
-    } else if (selectedIndex === selected.length - 1) {
-      newSelected = newSelected.concat(selected.slice(0, -1));
-    } else if (selectedIndex > 0) {
-      newSelected = newSelected.concat(selected.slice(0, selectedIndex), selected.slice(selectedIndex + 1));
-    }
-    setSelected(newSelected);
   };
 
   const handleChangeRowsPerPage = (event) => {
@@ -109,115 +119,125 @@ export default function SearchList() {
     setPage(0);
   };
 
-  const handleDeleteUser = (userId) => {
-    const deleteUser = userList.filter((user) => user.id !== userId);
-    setSelected([]);
-    setUserList(deleteUser);
-  };
+  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - comparedList.length) : 0;
 
-  const handleDeleteMultiUser = (selected) => {
-    const deleteUsers = userList.filter((user) => !selected.includes(user.name));
-    setSelected([]);
-    setUserList(deleteUsers);
-  };
-
-  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - userList.length) : 0;
-
-  const filteredUsers = [];
-  // const filteredUsers = applySortFilter(userList, getComparator(order, orderBy), filterName);
-  const isNotFound = !filteredUsers.length && Boolean(filterName);
+  const filteredItems = applySortFilter(comparedList, getComparator(order, orderBy), filterName);
+  const isNotFound = !filteredItems.length && Boolean(filterName);
 
   return (
-    <>
-      <UserListToolbar
-        numSelected={selected.length}
-        filterName={filterName}
-        onFilterName={handleFilterByName}
-        onDeleteUsers={() => handleDeleteMultiUser(selected)}
-      />
-
-      <Scrollbar>
-        <TableContainer sx={{ minWidth: 800 }}>
-          <Table>
-            <UserListHead
-              order={order}
-              orderBy={orderBy}
-              headLabel={TABLE_HEAD}
-              rowCount={userList.length}
-              numSelected={selected.length}
-              onRequestSort={handleRequestSort}
-              onSelectAllClick={handleSelectAllClick}
+    <Card sx={{ width: '65%', height: 1 }}>
+      <CardContent>
+        {isGroupBy ? (
+          <SimilarityList
+            subjects={subjects}
+            comparedList={comparedList}
+            isGroupBy={isGroupBy}
+            comparePercentage={comparePercentage}
+            setComparePercentage={setComparePercentage}
+            setIsGroupBy={setIsGroupBy}
+          />
+        ) : (
+          <>
+            <ListToolbar
+              mainSubject={subjects?.mainSubject}
+              comparedList={comparedList}
+              filterName={filterName}
+              isGroupBy={isGroupBy}
+              comparePercentage={comparePercentage}
+              setComparePercentage={setComparePercentage}
+              setIsGroupBy={setIsGroupBy}
+              onFilterName={handleFilterByName}
             />
-            <TableBody>
-              {filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
-                const { id, name, role, status, company, avatarUrl, isVerified } = row;
-                const isItemSelected = selected.indexOf(name) !== -1;
 
-                return (
-                  <TableRow
-                    hover
-                    key={id}
-                    tabIndex={-1}
-                    role="checkbox"
-                    selected={isItemSelected}
-                    aria-checked={isItemSelected}
-                  >
-                    <TableCell padding="checkbox">
-                      <Checkbox checked={isItemSelected} onClick={() => handleClick(name)} />
-                    </TableCell>
-                    <TableCell sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Avatar alt={name} src={avatarUrl} sx={{ mr: 2 }} />
-                      <Typography variant="subtitle2" noWrap>
-                        {name}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="left">{company}</TableCell>
-                    <TableCell align="left">{role}</TableCell>
-                    <TableCell align="left">{isVerified ? 'Yes' : 'No'}</TableCell>
-                    <TableCell align="left">
-                      <Label
-                        variant={theme.palette.mode === 'light' ? 'ghost' : 'filled'}
-                        color={(status === 'banned' && 'error') || 'success'}
-                      >
-                        {sentenceCase(status)}
-                      </Label>
-                    </TableCell>
+            <Scrollbar>
+              <TableContainer sx={{ minWidth: 800, height: 440, maxHeight: 440 }}>
+                <Table>
+                  <ListHead
+                    order={order}
+                    orderBy={orderBy}
+                    headLabel={TABLE_HEAD}
+                    rowCount={filteredItems.length}
+                    onRequestSort={handleRequestSort}
+                  />
+                  <TableBody>
+                    {filteredItems.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
+                      const { id, Links, MainSubject, SecondarySubject, SimilarityPercentage } = row;
 
-                    <TableCell align="right">
-                      <UserMoreMenu onDelete={() => handleDeleteUser(id)} userName={name} />
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-              {emptyRows > 0 && (
-                <TableRow style={{ height: 53 * emptyRows }}>
-                  <TableCell colSpan={6} />
-                </TableRow>
-              )}
-            </TableBody>
-            {isNotFound && (
-              <TableBody>
-                <TableRow>
-                  <TableCell align="center" colSpan={6} sx={{ py: 3 }}>
-                    <SearchNotFound searchQuery={filterName} />
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            )}
-          </Table>
-        </TableContainer>
-      </Scrollbar>
-
-      <TablePagination
-        rowsPerPageOptions={[5, 10, 25]}
-        component="div"
-        count={userList.length}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={(e, page) => setPage(page)}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-      />
-    </>
+                      return (
+                        <TableRow
+                          hover
+                          key={id}
+                          tabIndex={-1}
+                          role="checkbox"
+                          sx={{ backgroundColor: theme.palette.grey[200] }}
+                        >
+                          <TableCell sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Typography variant="subtitle2" noWrap>
+                              {MainSubject}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="left">
+                            <Typography variant="subtitle2" noWrap>
+                              {SecondarySubject}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="left">
+                            <Box sx={{ display: 'flex' }}>
+                              <Typography sx={{ display: 'flex' }}>
+                                {Links?.MainOrganicsCount}
+                                <Divider orientation="vertical" sx={{ mx: 1 }} variant="fullWidth" />
+                                {Links?.SubjectOrganicCount}
+                                <Divider orientation="vertical" sx={{ mx: 1 }} variant="fullWidth" />
+                                {Links?.Similarity}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell align="left">
+                            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                              <Box sx={{ width: '80%', mr: 1 }}>
+                                <LinearProgress value={SimilarityPercentage} variant="determinate" />
+                              </Box>
+                              <Box sx={{ minWidth: '20%' }}>
+                                <Typography variant="body2" color="text.secondary">{`${Math.round(
+                                  SimilarityPercentage
+                                )}%`}</Typography>
+                              </Box>
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {emptyRows > 0 && (
+                      <TableRow style={{ height: 53 * emptyRows }}>
+                        <TableCell colSpan={6} />
+                      </TableRow>
+                    )}
+                  </TableBody>
+                  {isNotFound && (
+                    <TableBody>
+                      <TableRow>
+                        <TableCell align="center" colSpan={6} sx={{ py: 3 }}>
+                          <SearchNotFound searchQuery={filterName} />
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  )}
+                </Table>
+              </TableContainer>
+            </Scrollbar>
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25]}
+              component="div"
+              count={filteredItems.length}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={(e, page) => setPage(page)}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+            />
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -247,7 +267,7 @@ function applySortFilter(array, comparator, query) {
     return a[1] - b[1];
   });
   if (query) {
-    return array.filter((_user) => _user.name.toLowerCase().indexOf(query.toLowerCase()) !== -1);
+    return array.filter((list) => list.SecondarySubject.toLowerCase().indexOf(query.toLowerCase()) !== -1);
   }
   return stabilizedThis.map((el) => el[0]);
 }

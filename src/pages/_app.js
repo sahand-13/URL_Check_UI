@@ -24,6 +24,7 @@ import RtlLayout from '../components/RtlLayout';
 import ProgressBar from '../components/ProgressBar';
 import ThemeColorPresets from '../components/ThemeColorPresets';
 import MotionLazyContainer from '../components/animate/MotionLazyContainer';
+import NotistackProvider from '../components/NotistackProvider';
 
 // ----------------------------------------------------------------------
 
@@ -47,14 +48,14 @@ export default function MyApp(props) {
       <CollapseDrawerProvider>
         <SettingsProvider defaultSettings={settings}>
           <ThemeProvider>
-            <MotionLazyContainer>
-              <ThemeColorPresets>
-                <RtlLayout>
+            <NotistackProvider>
+              <MotionLazyContainer>
+                <ThemeColorPresets>
                   <ProgressBar />
                   {getLayout(<Component {...pageProps} />)}
-                </RtlLayout>
-              </ThemeColorPresets>
-            </MotionLazyContainer>
+                </ThemeColorPresets>
+              </MotionLazyContainer>
+            </NotistackProvider>
           </ThemeProvider>
         </SettingsProvider>
       </CollapseDrawerProvider>

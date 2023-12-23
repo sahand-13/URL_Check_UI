@@ -1,14 +1,16 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { Box, Card, CardContent, Container, Divider, TextareaAutosize, Typography, styled } from '@mui/material';
 import MainCheckURLForm from '../sections/Home/MainCheckURLForm';
 import SearchList from '../sections/Home/SearchList';
+import Searched from '../sections/Home/Searched';
 
 export default function Index() {
+  const SearchedRef = useRef();
   return (
     <Container maxWidth={'xl'}>
       <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', alignContent: 'center' }}>
-        <Card sx={{ width: '30%', display: 'block', textAlign: 'center' }}>
+        <Card sx={{ width: '30%', display: 'block', textAlign: 'center', height: 1 }}>
           <CardContent>
             <Typography variant="h4" sx={{ color: (theme) => theme.palette.info.main }}>
               Check URL
@@ -19,14 +21,13 @@ export default function Index() {
               dolore magna aliqua.
             </Typography>
             <Divider orientation="horizontal" sx={{ my: 2 }} />
-            <MainCheckURLForm />
+            <MainCheckURLForm SearchedRef={SearchedRef} />
 
             {/* <Textarea aria-label="minimum height" minRows={3} placeholder="Minimum 3 rows" /> */}
           </CardContent>
         </Card>
-        <Card sx={{ width: '65%' }}>
-          <SearchList />
-        </Card>
+
+        <Searched ref={SearchedRef} />
       </Box>
     </Container>
   );

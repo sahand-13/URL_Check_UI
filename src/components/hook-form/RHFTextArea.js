@@ -54,7 +54,7 @@ export default function RHFTextArea({ name, ...other }) {
       name={name}
       control={control}
       render={({ field, fieldState: { error } }) => (
-        <Textarea {...field} fullWidth error={!!error} helperText={error?.message} {...other} />
+        <Textarea {...field} fullWidth error={!!error} helperText={error?.message} {...other} dir="auto" />
       )}
     />
   );

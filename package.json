@@ -1,8 +1,8 @@
 {
-  "name": "@minimal/material-kit-nextjs",
-  "author": "minimals.cc",
+  "name": "url-checker",
+  "author": "sahand golkar",
   "version": "3.0.0",
-  "description": "Simple Next.Js & Javascript",
+  "description": "google keyword checker and analysis",
   "private": true,
   "scripts": {
     "lint": "next lint",

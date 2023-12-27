@@ -34,14 +34,17 @@ export default function ListHead({
   numSelected,
   onRequestSort,
   onSelectAllClick,
+  hasCollapseIcon = true,
 }) {
   return (
     <TableHead>
       <TableRow>
+        {hasCollapseIcon && <TableCell padding="checkbox"></TableCell>}
         {headLabel.map((headCell) => (
           <TableCell
             size="small"
             key={headCell.id}
+            {...(headCell?.width && { width: headCell.width })}
             align={headCell.alignRight ? 'right' : 'left'}
             sortDirection={orderBy === headCell.id ? order : false}
           >

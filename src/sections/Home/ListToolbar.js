@@ -41,18 +41,117 @@ export default function ListToolbar({
   const exportToExcel = async () => {
     const fileType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
     const fileExtention = '.xlsx';
-    const ws = XLSX.utils.json_to_sheet(
-      comparedList.map((item) => {
-        return {
-          'Primary Subject': item?.MainSubject,
-          'Secondary Subject': item?.SecondarySubject,
-          Links: `[${item?.Links?.MainOrganicsCount} - ${item?.Links?.SubjectOrganicCount} - ${item?.Links?.Similarity}]`,
-          'Similarity Percentage': item?.SimilarityPercentage,
-        };
-      })
-    );
-    const wb = { Sheets: { data: ws }, SheetNames: ['data'] };
-    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    // Create a new workbook and a worksheet
+    var workbook = XLSX.utils.book_new();
+    var worksheet = XLSX.utils.aoa_to_sheet([['Group', 'Child', 'Group Search Rate', 'Group Difficulty']]);
+    // Styles
+    const headerStyle = { font: { bold: true, color: 'F83008' } };
+    const masterStyle = { font: { bold: true, color: 'F83008' } };
+    const detailStyle = { font: { bold: true, color: 'F83008' } };
+
+    // Function to add a row with style
+    function addRow(data, style, type) {
+      const row = XLSX.utils.aoa_to_sheet([data]);
+      XLSX.utils.sheet_add_aoa(worksheet, [data], { origin: -1 });
+      const rowNumber = worksheet['!ref'].split(':')[1].slice(1);
+      debugger;
+      if (type === 'child') {
+        if (!worksheet['!rows']) worksheet['!rows'] = [];
+        if (!worksheet['!rows'][rowNumber - 1]) worksheet['!rows'][rowNumber - 1] = { hpx: 20 };
+        worksheet['!rows'][rowNumber - 1].level = 1 + (worksheet['!rows'][rowNumber - 1].level || 0);
+      }
+
+      data.forEach((_, colNumber) => {
+        const cellRef = XLSX.utils.encode_cell({ r: rowNumber - 1, c: colNumber });
+        if (!worksheet[cellRef]) worksheet[cellRef] = {};
+        debugger;
+        worksheet[cellRef] = { ...worksheet[cellRef], s: style, w: 300 };
+        // Object.assign(worksheet[cellRef], style);
+      });
+    }
+
+    // Adding master-detail data
+    comparedList.forEach((masterRecord, index) => {
+      // Add a master record with style
+      const DifficultySum =
+        masterRecord?.SimilarityChildrens?.length > 0
+          ? masterRecord?.SimilarityChildrens.reduce(
+              (acc, current) => acc + current?.Difficulty,
+              masterRecord?.Difficulty
+            )
+          : masterRecord?.Difficulty;
+      const SearchRateSum =
+        masterRecord?.SimilarityChildrens?.length > 0
+          ? masterRecord?.SimilarityChildrens.reduce(
+              (acc, current) => acc + current?.SearchRate,
+              masterRecord?.SearchRate
+            )
+          : masterRecord?.SearchRate;
+      addRow(
+        [masterRecord?.SearchKey, masterRecord?.SimilarityChildrens?.length || '', SearchRateSum, DifficultySum],
+        masterStyle,
+        'master'
+      );
+
+      // Add detail records with style
+      if (masterRecord.SimilarityChildrens?.length > 0) {
+        masterRecord.SimilarityChildrens.forEach((detailRecord) => {
+          addRow(
+            ['', detailRecord?.SearchKey, detailRecord?.SearchRate, detailRecord?.Difficulty],
+            detailStyle,
+            'child'
+          );
+        });
+      }
+
+      // function gruppieren(ws, start_row, end_row) {
+      //   debugger;
+      //   /* create !rows array if it does not exist */
+      //   if (!ws['!rows']) ws['!rows'] = [];
+      //   /* loop over every row index */
+      //   for (var i = start_row; i <= end_row; ++i) {
+      //     /* create row metadata object if it does not exist */
+      //     if (!ws['!rows'][i]) ws['!rows'][i] = { hpx: 20 };
+      //     /* increment level */
+      //     ws['!rows'][i].level = 1 + (ws['!rows'][i].level || 0);
+      //   }
+      // }
+      // gruppieren(ws, index, masterRecord?.length);
+      // Add an empty row for readability, if not the last record
+    });
+
+    // Add the worksheet to the workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'MasterDetail');
+
+    // Write the workbook and initiate download
+    // XLSX.writeFile(workbook, filename);
+    // const ws = XLSX.utils.json_to_sheet(
+    //   comparedList.map((item) => {
+    //     const x = XLSX.utils.json_to_sheet(
+    //       item?.SimilarityChildrens.map((x) => {
+    //         return {
+    //           Group: x?.SearchKey,
+    //           'Search Rate': x?.SearchRate,
+    //           Difficulty: x?.Difficulty,
+    //         };
+    //       })
+    //     );
+
+    //     debugger;
+    //     return {
+    //       Group: item?.SearchKey,
+    //       'Search Rate': item?.SimilarityChildrens.reduce(
+    //         (acc, current) => acc + current?.SearchRate,
+    //         item?.SearchRate
+    //       ),
+
+    //       Difficulty: item?.SimilarityChildrens.reduce((acc, current) => acc + current?.Difficulty, item?.Difficulty),
+    //     };
+    //   }),
+    //   { header: ['Group', 'Search Rate', 'Difficulty', 'Childs']}
+    // );
+    // const wb = { Sheets: { data: ws }, SheetNames: ['data'] };
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
     const data = new Blob([excelBuffer], { type: fileType });
     FileSaver.saveAs(data, (mainSubject?.searchParameters?.q ?? 'data') + fileExtention);
   };
@@ -74,32 +173,19 @@ export default function ListToolbar({
           ),
         }}
       />
-
-      <Box>
-        <Tooltip placement="top" title="Turn on grouping">
-          <IconButton onClick={() => setIsGroupBy((pervious) => !pervious)}>
-            <Iconify
-              color={isGroupBy ? theme.palette.primary.main : theme.palette.text.primary}
-              icon={'codicon:group-by-ref-type'}
-            />
-          </IconButton>
-        </Tooltip>
+      <Box sx={{ width: '20%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <Slider
+          defaultValue={comparePercentage}
+          onChange={(e) => setComparePercentage(e.target.value)}
+          aria-label="Default"
+          valueLabelFormat={(e) => `${e}% Similarity`}
+          valueLabelDisplay="auto"
+        />
         <Tooltip placement="top" title="Export to excel">
           <IconButton onClick={() => exportToExcel()}>
             <Iconify icon={'vscode-icons:file-type-excel'} />
           </IconButton>
         </Tooltip>
-        {isGroupBy && (
-          <Box sx={{ width: 1, display: 'flex' }}>
-            <Slider
-              defaultValue={comparePercentage}
-              onChange={(e) => setComparePercentage(e.target.value)}
-              aria-label="Default"
-              valueLabelFormat={(e) => `${e}% Similarity`}
-              valueLabelDisplay="auto"
-            />
-          </Box>
-        )}
       </Box>
     </RootStyle>
   );

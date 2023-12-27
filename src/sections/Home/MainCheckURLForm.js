@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup/dist/yup';
 // @mui
-import { Stack, IconButton, InputAdornment, Alert, FormLabel, Typography, Divider } from '@mui/material';
+import { Stack, IconButton, InputAdornment, Alert, FormLabel, Typography, Divider, Box } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
+import XLSX from 'sheetjs-style';
 
 // components
 import Iconify from '../../components/Iconify';
@@ -14,19 +15,19 @@ import RHFTextArea from '../../components/hook-form/RHFTextArea';
 import axiosInstance from '../../utils/axios';
 import axios from 'axios';
 import { useSnackbar } from 'notistack';
+import { UploadMultiFile } from '../../components/upload';
+import UploadField from './UploadField';
 
 // ----------------------------------------------------------------------
 
 export default function MainCheckURLForm({ SearchedRef }) {
   const { enqueueSnackbar } = useSnackbar();
   const RegisterSchema = Yup.object().shape({
-    primarySubject: Yup.string().required('First subject is required'),
-    secondarySubject: Yup.string(),
+    files: Yup.array().min(1).required('Files is required'),
   });
 
   const defaultValues = {
-    primarySubject: '',
-    secondarySubject: '',
+    files: [],
   };
 
   const methods = useForm({
@@ -38,6 +39,8 @@ export default function MainCheckURLForm({ SearchedRef }) {
     reset,
     setError,
     handleSubmit,
+    setValue,
+    getValues,
     formState: { errors, isSubmitting },
   } = methods;
 
@@ -45,50 +48,69 @@ export default function MainCheckURLForm({ SearchedRef }) {
     return {
       key: query,
       requests: axiosInstance
-        .post(
-          'https://google.serper.dev/search',
-          JSON.stringify({
-            q: query,
-            gl: 'ir',
-            hl: 'fa',
-          }),
-          {
-            headers: {
-              //"X-API-KEY": "17551478abe27e857018d13c0dc71ca29d144c9d",
-              'X-API-KEY': '75418c0fcd175f2a64a5b9de50de5275d2e83ed5',
-              'Content-Type': 'application/json',
-            },
-          }
-        )
+        .post('https://google.serper.dev/search', JSON.stringify(query), {
+          headers: {
+            //"X-API-KEY": "17551478abe27e857018d13c0dc71ca29d144c9d",
+            'X-API-KEY': 'a27950df8eb58b139b3c9d9e8bb1ff956ff1be0e',
+            'Content-Type': 'application/json',
+          },
+        })
         .catch((error) => enqueueSnackbar(error, { variant: 'warning' })),
     };
   };
 
-  const onSubmit = async (data) => {
-    try {
-      const Requests = new Array();
-      Requests.push(SendRequest(data.primarySubject));
-      if (data.secondarySubject) {
-        const secondarykeys = data.secondarySubject.split('\n');
-        if (secondarykeys.length) {
-          secondarykeys.forEach((key) => {
-            if (key && key.replace('​', '') !== '') {
-              Requests.push(SendRequest(key));
+  const ExpandExcelFiles = async ({ files }) => {
+    const SheetsData = new Array();
+    for (const item in files) {
+      const base64 = await files[item].arrayBuffer();
+      const workbook = XLSX.read(base64, { type: 'array' });
+      if (workbook?.SheetNames?.length) {
+        workbook?.SheetNames.forEach((sheet) => {
+          const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheet]);
+          if (data?.length) {
+            const filterData = data.filter((item) => item?.Key);
+            if (filterData?.length) {
+              SheetsData.push(
+                ...filterData.map((item) => {
+                  return { Query: item?.Key, Difficulty: item?.Difficulty, SearchRate: item?.SearchRate };
+                })
+              );
             }
-          });
-        }
+          }
+        });
       }
-      debugger;
+    }
+    return SheetsData;
+  };
+  const onSubmit = async (data) => {
+    const filesData = await ExpandExcelFiles({ files: data?.files });
 
+    const Requests = new Array();
+
+    const chunkSize = 100;
+
+    for (let i = 0; i < filesData.length; i += chunkSize) {
+      const chunk = filesData.slice(i, i + chunkSize);
+      Requests.push(
+        SendRequest(
+          chunk.reduce(
+            (accumulator, currentValue) => accumulator.concat({ q: currentValue?.Query, gl: 'ir', hl: 'fa' }),
+            []
+          )
+        )
+      );
+    }
+
+    try {
       const response = await axios.all(Requests.map((item) => item.requests));
-      const newResponse = [...response.map((item) => item?.data)];
+      const newResponse = response.reduce((accumulator, currentValue) => {
+        return (accumulator = [...accumulator, ...currentValue.data]);
+      }, []);
       if (newResponse?.length) {
-        const mainRequest = newResponse.find((x) => x.searchParameters.q === data.primarySubject);
-        const mainRequestIndex = newResponse.findIndex((item) => item?.searchParameters?.q === data.primarySubject);
         if (SearchedRef.current) {
           SearchedRef.current.setSubjects({
-            mainSubject: mainRequest,
-            secondarySubjects: newResponse.filter((_, index) => index !== mainRequestIndex),
+            SearchedResult: newResponse,
+            allImportedDataFromExcel: filesData,
           });
         }
       }
@@ -105,25 +127,22 @@ export default function MainCheckURLForm({ SearchedRef }) {
 
         <Stack spacing={2}>
           <FormLabel sx={{ mx: 1 }}>
-            <Typography variant="button">First subject</Typography>
-            <RHFTextField
-              name="primarySubject"
-              placeholder="Your first subject ..."
-              size="small"
-              inputProps={{ dir: 'auto' }}
-            />
+            <Typography variant="button" sx={{ width: 1 }}>
+              Drop all excel files here Excel should like below
+            </Typography>
+            <Divider orientation="horizontal" sx={{ mx: 6 }} variant="fullWidth" />
+            <Box sx={{ display: 'flex', width: 1, height: 30, justifyContent: 'center', alignItems: 'center' }}>
+              <Divider orientation="vertical" sx={{ mx: 1 }} variant="fullWidth" />
+              Key
+              <Divider orientation="vertical" sx={{ mx: 2 }} variant="fullWidth" />
+              Difficulty
+              <Divider orientation="vertical" sx={{ mx: 2 }} variant="fullWidth" />
+              SearchRate
+              <Divider orientation="vertical" sx={{ mx: 1 }} variant="fullWidth" />
+            </Box>
+            <Divider orientation="horizontal" sx={{ mx: 6 }} variant="fullWidth" />
           </FormLabel>
-          <FormLabel>
-            <Typography variant="button"> Secondary subjects list</Typography>
-            <RHFTextArea
-              sx={{ mx: 'auto' }}
-              minRows={3}
-              name="secondarySubject"
-              size="small"
-              placeholder="Your second subject ..."
-            />
-            <Typography variant="caption">هر کلمه کلیدی را در یک سطر جدید وارد کنید</Typography>
-          </FormLabel>
+          <UploadField name={'files'} setFormValue={setValue} getValues={getValues} />
         </Stack>
         <Divider orientation="horizontal" sx={{ my: 2 }} />
 

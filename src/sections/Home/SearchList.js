@@ -21,10 +21,8 @@ import {
   LinearProgress,
   Box,
   CardContent,
+  IconButton,
 } from '@mui/material';
-
-// _mock_
-import { _userList } from '../../_mock';
 
 // components
 
@@ -36,14 +34,17 @@ import ListToolbar from './ListToolbar';
 import ListHead from './ListHead';
 import uuidv4 from '../../utils/uuidv4';
 import SimilarityList from './Similarity/SimilarityList';
+import _ from 'lodash';
+import Iconify from '../../components/Iconify';
+import RowComponent from './RowComponent';
 
 // ----------------------------------------------------------------------
 
 const TABLE_HEAD = [
-  { id: 'MainSubject', label: 'Main Subject', alignRight: false },
-  { id: 'SecondarySubject', label: 'Secondary Subject', alignRight: false },
-  { id: 'Links', label: 'Links', alignRight: false },
-  { id: 'Similarity', label: 'Similarity', alignRight: false },
+  { id: 'MainSubject', label: 'Main Subject', alignRight: false, width: '15%' },
+  { id: 'Difficulty', label: 'Difficulty', alignRight: false, width: '15%' },
+  { id: 'RelatedKeys', label: 'Related Keys', alignRight: false },
+  { id: 'SearchRate', label: 'Search Rate', alignRight: false, width: '15%' },
 ];
 
 // ----------------------------------------------------------------------
@@ -81,27 +82,73 @@ export default function SearchList({ subjects }) {
   };
 
   useEffect(() => {
-    if (subjects?.secondarySubjects?.length && typeof subjects?.mainSubject === 'object') {
-      const { secondarySubjects, mainSubject } = subjects;
-      setComparedList(
-        secondarySubjects.map((items, index) => {
-          const Similarity = getSimilarity({ mainOrganics: mainSubject.organic, subjectOrganics: items?.organic });
-          return {
-            id: uuidv4(),
-            MainSubject: mainSubject?.searchParameters?.q,
-            SecondarySubject: items?.searchParameters?.q,
-            Links: {
-              MainOrganicsCount: mainSubject?.organic?.length,
-              SubjectOrganicCount: items?.organic?.length,
-              Similarity,
-            },
-            SimilarityPercentage: Math.round((100 / mainSubject?.organic?.length) * Similarity),
-          };
-        })
-      );
+    if (subjects?.SearchedResult?.length) {
+      const { SearchedResult, allImportedDataFromExcel } = subjects;
+
+      const AllComparedGroupKeys = new Array();
+
+      const CombinedData = SearchedResult.reduce((accumulator, currentValue) => {
+        const FindInExcelData = allImportedDataFromExcel?.find((x) => x?.Query === currentValue?.searchParameters?.q);
+        const newObject = {
+          id: uuidv4(),
+          SearchKey: currentValue?.searchParameters?.q,
+          organic: [...currentValue.organic],
+          SimilarityChildrens: [],
+          Difficulty: FindInExcelData?.Difficulty || 0,
+          SearchRate: FindInExcelData?.SearchRate || 0,
+        };
+        const SearchKeysArray = new Array(currentValue?.searchParameters?.q);
+
+        SearchedResult.forEach((item) => {
+          if (item?.searchParameters?.q !== currentValue?.searchParameters?.q) {
+            const intersections = _.intersectionBy(currentValue.organic, item.organic, 'link');
+            const SimilarityPercantage = Math.round(
+              (intersections.length / (currentValue?.organic?.length + item?.organic?.length - intersections.length)) *
+                100
+            );
+            if (
+              SimilarityPercantage >= comparePercentage &&
+              intersections?.length &&
+              !newObject.SimilarityChildrens.find((item) => item?.SearchKey === item?.searchParameters?.q)
+            ) {
+              const itemFindInExcelData = allImportedDataFromExcel?.find((x) => x?.Query === item?.searchParameters?.q);
+              SearchKeysArray.push(item?.searchParameters?.q);
+              newObject.SimilarityChildrens.push({
+                id: uuidv4(),
+                ParentSearchKey: newObject?.SearchKey,
+                ParentSearchLinkLength: currentValue?.organic?.length,
+                SearchKey: item?.searchParameters?.q,
+                SearchLinkLength: item?.organic?.length,
+                organic: [...item?.organic],
+                Similarity: intersections?.length,
+                SimilarityLinks: intersections,
+                Difficulty: itemFindInExcelData?.Difficulty || 0,
+                SearchRate: itemFindInExcelData?.SearchRate || 0,
+              });
+            }
+          }
+        });
+        debugger;
+        let IsExistGroup = 0;
+        AllComparedGroupKeys.forEach((item) => {
+          const isEqual = _.difference(SearchKeysArray, item);
+          if (!isEqual.length) {
+            IsExistGroup += 1;
+          }
+        });
+
+        if (!Boolean(IsExistGroup)) {
+          AllComparedGroupKeys.push(SearchKeysArray);
+          accumulator.push(newObject);
+        }
+
+        return accumulator;
+      }, []);
+      debugger;
+      setComparedList(CombinedData);
       setPage(0);
     }
-  }, [subjects]);
+  }, [subjects, comparePercentage]);
 
   const handleRequestSort = (property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -127,115 +174,58 @@ export default function SearchList({ subjects }) {
   return (
     <Card sx={{ width: '65%', height: 1 }}>
       <CardContent>
-        {isGroupBy ? (
-          <SimilarityList
-            subjects={subjects}
-            comparedList={comparedList}
-            isGroupBy={isGroupBy}
-            comparePercentage={comparePercentage}
-            setComparePercentage={setComparePercentage}
-            setIsGroupBy={setIsGroupBy}
-          />
-        ) : (
-          <>
-            <ListToolbar
-              mainSubject={subjects?.mainSubject}
-              comparedList={comparedList}
-              filterName={filterName}
-              isGroupBy={isGroupBy}
-              comparePercentage={comparePercentage}
-              setComparePercentage={setComparePercentage}
-              setIsGroupBy={setIsGroupBy}
-              onFilterName={handleFilterByName}
-            />
+        <ListToolbar
+          mainSubject={subjects?.mainSubject}
+          comparedList={comparedList}
+          filterName={filterName}
+          isGroupBy={isGroupBy}
+          comparePercentage={comparePercentage}
+          setComparePercentage={setComparePercentage}
+          setIsGroupBy={setIsGroupBy}
+          onFilterName={handleFilterByName}
+        />
 
-            <Scrollbar>
-              <TableContainer sx={{ minWidth: 800, height: 440, maxHeight: 440 }}>
-                <Table>
-                  <ListHead
-                    order={order}
-                    orderBy={orderBy}
-                    headLabel={TABLE_HEAD}
-                    rowCount={filteredItems.length}
-                    onRequestSort={handleRequestSort}
-                  />
-                  <TableBody>
-                    {filteredItems.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
-                      const { id, Links, MainSubject, SecondarySubject, SimilarityPercentage } = row;
-
-                      return (
-                        <TableRow
-                          hover
-                          key={id}
-                          tabIndex={-1}
-                          role="checkbox"
-                          sx={{ backgroundColor: theme.palette.grey[200] }}
-                        >
-                          <TableCell sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Typography variant="subtitle2" noWrap>
-                              {MainSubject}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="left">
-                            <Typography variant="subtitle2" noWrap>
-                              {SecondarySubject}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="left">
-                            <Box sx={{ display: 'flex' }}>
-                              <Typography sx={{ display: 'flex' }}>
-                                {Links?.MainOrganicsCount}
-                                <Divider orientation="vertical" sx={{ mx: 1 }} variant="fullWidth" />
-                                {Links?.SubjectOrganicCount}
-                                <Divider orientation="vertical" sx={{ mx: 1 }} variant="fullWidth" />
-                                {Links?.Similarity}
-                              </Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell align="left">
-                            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                              <Box sx={{ width: '80%', mr: 1 }}>
-                                <LinearProgress value={SimilarityPercentage} variant="determinate" />
-                              </Box>
-                              <Box sx={{ minWidth: '20%' }}>
-                                <Typography variant="body2" color="text.secondary">{`${Math.round(
-                                  SimilarityPercentage
-                                )}%`}</Typography>
-                              </Box>
-                            </Box>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                    {emptyRows > 0 && (
-                      <TableRow style={{ height: 53 * emptyRows }}>
-                        <TableCell colSpan={6} />
-                      </TableRow>
-                    )}
-                  </TableBody>
-                  {isNotFound && (
-                    <TableBody>
-                      <TableRow>
-                        <TableCell align="center" colSpan={6} sx={{ py: 3 }}>
-                          <SearchNotFound searchQuery={filterName} />
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  )}
-                </Table>
-              </TableContainer>
-            </Scrollbar>
-            <TablePagination
-              rowsPerPageOptions={[5, 10, 25]}
-              component="div"
-              count={filteredItems.length}
-              rowsPerPage={rowsPerPage}
-              page={page}
-              onPageChange={(e, page) => setPage(page)}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-            />
-          </>
-        )}
+        <Scrollbar>
+          <TableContainer sx={{ minWidth: 800, height: 440, maxHeight: 440 }}>
+            <Table id={'test'}>
+              <ListHead
+                order={order}
+                orderBy={orderBy}
+                headLabel={TABLE_HEAD}
+                rowCount={filteredItems.length}
+                onRequestSort={handleRequestSort}
+              />
+              <TableBody>
+                {filteredItems.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
+                  return <RowComponent key={row?.id} row={row} />;
+                })}
+                {emptyRows > 0 && (
+                  <TableRow style={{ height: 53 * emptyRows }}>
+                    <TableCell colSpan={6} />
+                  </TableRow>
+                )}
+              </TableBody>
+              {isNotFound && (
+                <TableBody>
+                  <TableRow>
+                    <TableCell align="center" colSpan={6} sx={{ py: 3 }}>
+                      <SearchNotFound searchQuery={filterName} />
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              )}
+            </Table>
+          </TableContainer>
+        </Scrollbar>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
+          component="div"
+          count={filteredItems.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={(e, page) => setPage(page)}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
       </CardContent>
     </Card>
   );
@@ -267,7 +257,15 @@ function applySortFilter(array, comparator, query) {
     return a[1] - b[1];
   });
   if (query) {
-    return array.filter((list) => list.SecondarySubject.toLowerCase().indexOf(query.toLowerCase()) !== -1);
+    const newArray = array.map((item) => {
+      return {
+        ...item,
+        SimilarityChildrens: item?.SimilarityChildrens.filter(
+          (item) => item?.SearchKey.toLowerCase().indexOf(query.toLowerCase()) !== -1
+        ),
+      };
+    });
+    return newArray.filter((item) => item?.SimilarityChildrens.length > 0);
   }
   return stabilizedThis.map((el) => el[0]);
 }

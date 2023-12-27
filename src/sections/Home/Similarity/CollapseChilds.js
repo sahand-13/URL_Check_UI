@@ -2,7 +2,7 @@ import { sentenceCase } from 'change-case';
 import { useEffect, useState } from 'react';
 // next
 // @mui
-import { useTheme } from '@mui/material/styles';
+import { styled, useTheme } from '@mui/material/styles';
 import {
   Card,
   Table,
@@ -20,6 +20,8 @@ import {
   LinearProgress,
   Box,
   CardContent,
+  Tooltip,
+  tooltipClasses,
 } from '@mui/material';
 
 // _mock_
@@ -35,17 +37,21 @@ import ListHead from '../ListHead';
 // ----------------------------------------------------------------------
 
 const TABLE_HEAD = [
-  { id: 'MainSubject', label: 'Main Subject', alignRight: false },
   { id: 'SecondarySubject', label: 'Secondary Subject', alignRight: false },
+  { id: 'SearchRate', label: 'Search Rate', alignRight: false },
   { id: 'Links', label: 'Links', alignRight: false },
   { id: 'Similarity', label: 'Similarity', alignRight: false },
 ];
 
 // ----------------------------------------------------------------------
-
+const CustomWidthTooltip = styled(({ className, ...props }) => <Tooltip {...props} classes={{ popper: className }} />)({
+  [`& .${tooltipClasses.tooltip}`]: {
+    maxWidth: 800,
+  },
+});
 // ----------------------------------------------------------------------
 
-export default function CollapseChilds({ Childs }) {
+export default function CollapseChilds({ Childs, parentData }) {
   const theme = useTheme();
 
   const [page, setPage] = useState(0);
@@ -90,44 +96,154 @@ export default function CollapseChilds({ Childs }) {
               headLabel={TABLE_HEAD}
               rowCount={newfilteredItems.length}
               onRequestSort={handleRequestSort}
+              hasCollapseIcon={false}
             />
             <TableBody>
-              {newfilteredItems.map((row) => {
-                debugger;
-
-                const { id, Links, MainSubject, SecondarySubject, SimilarityPercentage } = row?.data;
-
+              {newfilteredItems.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
+                const {
+                  id,
+                  ParentSearchKey,
+                  ParentSearchLinkLength,
+                  SearchKey,
+                  SearchLinkLength,
+                  organic,
+                  Similarity,
+                  Difficulty,
+                  SearchRate,
+                  SimilarityLinks,
+                } = row;
                 return (
                   <TableRow hover key={id} tabIndex={-1} role="checkbox">
                     <TableCell sx={{ display: 'flex', alignItems: 'center' }}>
                       <Typography variant="subtitle2" noWrap>
-                        {MainSubject}
+                        {SearchKey}
                       </Typography>
                     </TableCell>
                     <TableCell align="left">
                       <Typography variant="subtitle2" noWrap>
-                        {SecondarySubject}
+                        {SearchRate}
                       </Typography>
                     </TableCell>
                     <TableCell align="left">
                       <Box sx={{ display: 'flex' }}>
                         <Typography sx={{ display: 'flex' }}>
-                          {Links?.MainOrganicsCount}
+                          <CustomWidthTooltip
+                            sx={{ width: 1000 }}
+                            title={
+                              <Box sx={{ display: 'block', width: 1 }}>
+                                {organic?.length &&
+                                  organic?.map((item) => {
+                                    return (
+                                      <Box
+                                        sx={{
+                                          m: 1,
+                                          textAlign: 'center',
+                                          display: 'flex',
+                                          justifyContent: 'space-between',
+                                          alignItems: 'center',
+                                        }}
+                                      >
+                                        <Typography variant="button" sx={{ mx: 1 }}>
+                                          {item?.title}
+                                        </Typography>
+                                        <Typography variant="button" sx={{ mx: 1 }}>
+                                          {item?.link}
+                                        </Typography>
+                                        <Typography variant="button" sx={{ mx: 1, width: 200 }}>
+                                          Position: {item?.position}
+                                        </Typography>
+                                      </Box>
+                                    );
+                                  })}
+                              </Box>
+                            }
+                          >
+                            <div>{ParentSearchLinkLength}</div>
+                          </CustomWidthTooltip>
                           <Divider orientation="vertical" sx={{ mx: 1 }} variant="fullWidth" />
-                          {Links?.SubjectOrganicCount}
+                          <CustomWidthTooltip
+                            sx={{ width: 1000 }}
+                            title={
+                              <Box sx={{ display: 'block', width: 1 }}>
+                                {organic?.length &&
+                                  organic?.map((item) => {
+                                    return (
+                                      <Box
+                                        sx={{
+                                          m: 1,
+                                          textAlign: 'center',
+                                          display: 'flex',
+                                          justifyContent: 'space-between',
+                                          alignItems: 'center',
+                                        }}
+                                      >
+                                        <Typography variant="button" sx={{ mx: 1 }}>
+                                          {item?.title}
+                                        </Typography>
+                                        <Typography variant="button" sx={{ mx: 1 }}>
+                                          {item?.link}
+                                        </Typography>
+                                        <Typography variant="button" sx={{ mx: 1, width: 200 }}>
+                                          Position: {item?.position}
+                                        </Typography>
+                                      </Box>
+                                    );
+                                  })}
+                              </Box>
+                            }
+                          >
+                            <div>{SearchLinkLength}</div>
+                          </CustomWidthTooltip>
                           <Divider orientation="vertical" sx={{ mx: 1 }} variant="fullWidth" />
-                          {Links?.Similarity}
+                          <CustomWidthTooltip
+                            sx={{ width: 1000 }}
+                            title={
+                              <Box sx={{ display: 'block', width: 1 }}>
+                                {SimilarityLinks?.length &&
+                                  SimilarityLinks?.map((item) => {
+                                    return (
+                                      <Box
+                                        sx={{
+                                          m: 1,
+                                          textAlign: 'center',
+                                          display: 'flex',
+                                          justifyContent: 'space-between',
+                                          alignItems: 'center',
+                                        }}
+                                      >
+                                        <Typography variant="button" sx={{ mx: 1 }}>
+                                          {item?.title}
+                                        </Typography>
+                                        <Typography variant="button" sx={{ mx: 1 }}>
+                                          {item?.link}
+                                        </Typography>
+                                        <Typography variant="button" sx={{ mx: 1, width: 200 }}>
+                                          Position: {item?.position}
+                                        </Typography>
+                                      </Box>
+                                    );
+                                  })}
+                              </Box>
+                            }
+                          >
+                            <div>{Similarity}</div>
+                          </CustomWidthTooltip>
                         </Typography>
                       </Box>
                     </TableCell>
                     <TableCell align="left">
                       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                         <Box sx={{ width: '80%', mr: 1 }}>
-                          <LinearProgress value={SimilarityPercentage} variant="determinate" />
+                          <LinearProgress
+                            value={Math.round(
+                              (Similarity / (ParentSearchLinkLength + organic?.length - Similarity)) * 100
+                            )}
+                            variant="determinate"
+                          />
                         </Box>
                         <Box sx={{ minWidth: '20%' }}>
                           <Typography variant="body2" color="text.secondary">{`${Math.round(
-                            SimilarityPercentage
+                            (Similarity / (ParentSearchLinkLength + organic?.length - Similarity)) * 100
                           )}%`}</Typography>
                         </Box>
                       </Box>
@@ -153,6 +269,16 @@ export default function CollapseChilds({ Childs }) {
           </Table>
         </TableContainer>
       </Scrollbar>
+      <TablePagination
+        sx={{ mx: 15 }}
+        rowsPerPageOptions={[5, 10, 25]}
+        component="div"
+        count={Childs?.length}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={(e, page) => setPage(page)}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
     </>
   );
 }

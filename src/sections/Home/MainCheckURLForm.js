@@ -1,37 +1,28 @@
 import * as Yup from 'yup';
-import { useState } from 'react';
 // form
 import { useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup/dist/yup';
 // @mui
-import { Stack, IconButton, InputAdornment, Alert, FormLabel, Typography, Divider, Box } from '@mui/material';
+import { Stack, Alert, FormLabel, Typography, Divider, Box } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import XLSX from 'sheetjs-style';
 
 // components
-import Iconify from '../../components/Iconify';
-import { FormProvider, RHFTextField } from '../../components/hook-form';
-import RHFTextArea from '../../components/hook-form/RHFTextArea';
+import { FormProvider } from '../../components/hook-form';
 import axiosInstance from '../../utils/axios';
 import axios from 'axios';
 import { useSnackbar } from 'notistack';
-import { UploadMultiFile } from '../../components/upload';
 import UploadField from './UploadField';
 
 // ----------------------------------------------------------------------
 
 export default function MainCheckURLForm({ SearchedRef }) {
   const { enqueueSnackbar } = useSnackbar();
-  const RegisterSchema = Yup.object().shape({
-    files: Yup.array().min(1).required('Files is required'),
-  });
 
   const defaultValues = {
     files: [],
   };
 
   const methods = useForm({
-    resolver: yupResolver(RegisterSchema),
     defaultValues,
   });
 
@@ -50,7 +41,6 @@ export default function MainCheckURLForm({ SearchedRef }) {
       requests: axiosInstance
         .post('https://google.serper.dev/search', JSON.stringify(query), {
           headers: {
-            //"X-API-KEY": "17551478abe27e857018d13c0dc71ca29d144c9d",
             'X-API-KEY': 'a27950df8eb58b139b3c9d9e8bb1ff956ff1be0e',
             'Content-Type': 'application/json',
           },

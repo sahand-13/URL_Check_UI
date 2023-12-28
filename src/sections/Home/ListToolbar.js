@@ -7,6 +7,7 @@ import Iconify from '../../components/Iconify';
 import InputStyle from '../../components/InputStyle';
 import * as FileSaver from 'file-saver';
 import XLSX from 'sheetjs-style';
+import _ from 'lodash';
 
 // ----------------------------------------------------------------------
 
@@ -54,7 +55,6 @@ export default function ListToolbar({
       const row = XLSX.utils.aoa_to_sheet([data]);
       XLSX.utils.sheet_add_aoa(worksheet, [data], { origin: -1 });
       const rowNumber = worksheet['!ref'].split(':')[1].slice(1);
-      debugger;
       if (type === 'child') {
         if (!worksheet['!rows']) worksheet['!rows'] = [];
         if (!worksheet['!rows'][rowNumber - 1]) worksheet['!rows'][rowNumber - 1] = { hpx: 20 };
@@ -64,7 +64,6 @@ export default function ListToolbar({
       data.forEach((_, colNumber) => {
         const cellRef = XLSX.utils.encode_cell({ r: rowNumber - 1, c: colNumber });
         if (!worksheet[cellRef]) worksheet[cellRef] = {};
-        debugger;
         worksheet[cellRef] = { ...worksheet[cellRef], s: style, w: 300 };
         // Object.assign(worksheet[cellRef], style);
       });
@@ -73,13 +72,10 @@ export default function ListToolbar({
     // Adding master-detail data
     comparedList.forEach((masterRecord, index) => {
       // Add a master record with style
-      const DifficultySum =
-        masterRecord?.SimilarityChildrens?.length > 0
-          ? masterRecord?.SimilarityChildrens.reduce(
-              (acc, current) => acc + current?.Difficulty,
-              masterRecord?.Difficulty
-            )
-          : masterRecord?.Difficulty;
+      const DifficultySum = _.max([
+        ...masterRecord?.SimilarityChildrens.map((item) => item?.Difficulty),
+        masterRecord?.Difficulty,
+      ]);
       const SearchRateSum =
         masterRecord?.SimilarityChildrens?.length > 0
           ? masterRecord?.SimilarityChildrens.reduce(

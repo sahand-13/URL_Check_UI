@@ -235,15 +235,13 @@ export default function CollapseChilds({ Childs, parentData }) {
                       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                         <Box sx={{ width: '80%', mr: 1 }}>
                           <LinearProgress
-                            value={Math.round(
-                              (Similarity / (ParentSearchLinkLength + organic?.length - Similarity)) * 100
-                            )}
+                            value={Math.round((100 / ParentSearchLinkLength) * Similarity)}
                             variant="determinate"
                           />
                         </Box>
                         <Box sx={{ minWidth: '20%' }}>
                           <Typography variant="body2" color="text.secondary">{`${Math.round(
-                            (Similarity / (ParentSearchLinkLength + organic?.length - Similarity)) * 100
+                            (100 / ParentSearchLinkLength) * Similarity
                           )}%`}</Typography>
                         </Box>
                       </Box>

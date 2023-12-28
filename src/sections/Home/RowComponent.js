@@ -46,17 +46,6 @@ const RowComponent = ({ row }) => {
         <TableCell sx={{ display: 'flex', alignItems: 'center' }}>
           <Typography variant="subtitle2">{Boolean(SimilarityChildrens?.length) && SimilarityJoin}</Typography>
         </TableCell>
-        {/* <TableCell align="left">
-                            <Box sx={{ display: 'flex' }}>
-                              <Typography sx={{ display: 'flex' }}>
-                                {Links?.MainOrganicsCount}
-                                <Divider orientation="vertical" sx={{ mx: 1 }} variant="fullWidth" />
-                                {Links?.SubjectOrganicCount}
-                                <Divider orientation="vertical" sx={{ mx: 1 }} variant="fullWidth" />
-                                {Links?.Similarity}
-                              </Typography>
-                            </Box>
-                          </TableCell> */}
         <TableCell align="left">{SearchRate}</TableCell>
       </TableRow>
       <TableRow>

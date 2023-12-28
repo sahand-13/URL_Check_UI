@@ -102,10 +102,7 @@ export default function SearchList({ subjects }) {
         SearchedResult.forEach((item) => {
           if (item?.searchParameters?.q !== currentValue?.searchParameters?.q) {
             const intersections = _.intersectionBy(currentValue.organic, item.organic, 'link');
-            const SimilarityPercantage = Math.round(
-              (intersections.length / (currentValue?.organic?.length + item?.organic?.length - intersections.length)) *
-                100
-            );
+            const SimilarityPercantage = Math.round((100 / currentValue?.organic?.length) * intersections.length);
             if (
               SimilarityPercantage >= comparePercentage &&
               intersections?.length &&

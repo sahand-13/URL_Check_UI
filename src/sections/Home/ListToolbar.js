@@ -8,6 +8,7 @@ import InputStyle from '../../components/InputStyle';
 import * as FileSaver from 'file-saver';
 import XLSX from 'sheetjs-style';
 import _ from 'lodash';
+import { useState } from 'react';
 
 // ----------------------------------------------------------------------
 
@@ -36,7 +37,7 @@ export default function ListToolbar({
   setComparePercentage,
 }) {
   const theme = useTheme();
-
+  const [value, setValue] = useState(50);
   const isLight = theme.palette.mode === 'light';
 
   const exportToExcel = async () => {
@@ -172,10 +173,13 @@ export default function ListToolbar({
       <Box sx={{ width: '20%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         <Slider
           defaultValue={comparePercentage}
-          onChange={(e) => setComparePercentage(e.target.value)}
+          onChange={(e) => setValue(e.target.value)}
           aria-label="Default"
           valueLabelFormat={(e) => `${e}% Similarity`}
           valueLabelDisplay="auto"
+          onChangeCommitted={(e) => {
+            setComparePercentage(value);
+          }}
         />
         <Tooltip placement="top" title="Export to excel">
           <IconButton onClick={() => exportToExcel()}>

@@ -4,7 +4,6 @@ import SearchList from './SearchList';
 const Searched = forwardRef((_, ref) => {
   const [subjects, setSubjects] = useState({
     SearchedResult: null,
-    allImportedDataFromExcel: null,
   });
 
   useImperativeHandle(

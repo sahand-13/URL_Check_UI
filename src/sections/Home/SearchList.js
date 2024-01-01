@@ -83,38 +83,38 @@ export default function SearchList({ subjects }) {
 
   useEffect(() => {
     if (subjects?.SearchedResult?.length) {
-      const { SearchedResult, allImportedDataFromExcel } = subjects;
+      const { SearchedResult } = subjects;
 
       const AllComparedGroupKeys = new Array();
 
       const CombinedData = SearchedResult.reduce((accumulator, currentValue) => {
-        const FindInExcelData = allImportedDataFromExcel?.find((x) => x?.Query === currentValue?.searchParameters?.q);
+        const FindInExcelData = SearchedResult?.find((x) => x?.Query === currentValue?.Query);
         const newObject = {
           id: uuidv4(),
-          SearchKey: currentValue?.searchParameters?.q,
+          SearchKey: currentValue?.Query,
           organic: [...currentValue.organic],
           SimilarityChildrens: [],
           Difficulty: FindInExcelData?.Difficulty || 0,
           SearchRate: FindInExcelData?.SearchRate || 0,
         };
-        const SearchKeysArray = new Array(currentValue?.searchParameters?.q);
+        const SearchKeysArray = new Array(currentValue?.Query);
 
         SearchedResult.forEach((item) => {
-          if (item?.searchParameters?.q !== currentValue?.searchParameters?.q) {
+          if (item?.Query !== currentValue?.Query) {
             const intersections = _.intersectionBy(currentValue.organic, item.organic, 'link');
             const SimilarityPercantage = Math.round((100 / currentValue?.organic?.length) * intersections.length);
             if (
               SimilarityPercantage >= comparePercentage &&
               intersections?.length &&
-              !newObject.SimilarityChildrens.find((item) => item?.SearchKey === item?.searchParameters?.q)
+              !newObject.SimilarityChildrens.find((item) => item?.SearchKey === item?.Query)
             ) {
-              const itemFindInExcelData = allImportedDataFromExcel?.find((x) => x?.Query === item?.searchParameters?.q);
-              SearchKeysArray.push(item?.searchParameters?.q);
+              const itemFindInExcelData = SearchedResult?.find((x) => x?.Query === item?.Query);
+              SearchKeysArray.push(item?.Query);
               newObject.SimilarityChildrens.push({
                 id: uuidv4(),
                 ParentSearchKey: newObject?.SearchKey,
                 ParentSearchLinkLength: currentValue?.organic?.length,
-                SearchKey: item?.searchParameters?.q,
+                SearchKey: item?.Query,
                 SearchLinkLength: item?.organic?.length,
                 organic: [...item?.organic],
                 Similarity: intersections?.length,
@@ -125,7 +125,6 @@ export default function SearchList({ subjects }) {
             }
           }
         });
-        debugger;
         let IsExistGroup = 0;
         AllComparedGroupKeys.forEach((item) => {
           const isEqual = _.difference(SearchKeysArray, item);

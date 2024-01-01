@@ -16,8 +16,6 @@ import UploadField from './UploadField';
 // ----------------------------------------------------------------------
 
 export default function MainCheckURLForm({ SearchedRef }) {
-  const { enqueueSnackbar } = useSnackbar();
-
   const defaultValues = {
     files: [],
   };
@@ -35,20 +33,6 @@ export default function MainCheckURLForm({ SearchedRef }) {
     formState: { errors, isSubmitting },
   } = methods;
 
-  const SendRequest = (query) => {
-    return {
-      key: query,
-      requests: axiosInstance
-        .post('https://google.serper.dev/search', JSON.stringify(query), {
-          headers: {
-            'X-API-KEY': 'a27950df8eb58b139b3c9d9e8bb1ff956ff1be0e',
-            'Content-Type': 'application/json',
-          },
-        })
-        .catch((error) => enqueueSnackbar(error, { variant: 'warning' })),
-    };
-  };
-
   const ExpandExcelFiles = async ({ files }) => {
     const SheetsData = new Array();
     for (const item in files) {
@@ -62,7 +46,12 @@ export default function MainCheckURLForm({ SearchedRef }) {
             if (filterData?.length) {
               SheetsData.push(
                 ...filterData.map((item) => {
-                  return { Query: item?.Key, Difficulty: item?.Difficulty, SearchRate: item?.SearchRate };
+                  return {
+                    Query: item?.Key,
+                    Difficulty: item?.Difficulty,
+                    SearchRate: item?.SearchRate,
+                    organic: item?.organic?.length ? item?.organic.split(',') : [],
+                  };
                 })
               );
             }
@@ -73,34 +62,12 @@ export default function MainCheckURLForm({ SearchedRef }) {
     return SheetsData;
   };
   const onSubmit = async (data) => {
-    const filesData = await ExpandExcelFiles({ files: data?.files });
-
-    const Requests = new Array();
-
-    const chunkSize = 100;
-
-    for (let i = 0; i < filesData.length; i += chunkSize) {
-      const chunk = filesData.slice(i, i + chunkSize);
-      Requests.push(
-        SendRequest(
-          chunk.reduce(
-            (accumulator, currentValue) => accumulator.concat({ q: currentValue?.Query, gl: 'ir', hl: 'fa' }),
-            []
-          )
-        )
-      );
-    }
-
     try {
-      const response = await axios.all(Requests.map((item) => item.requests));
-      const newResponse = response.reduce((accumulator, currentValue) => {
-        return (accumulator = [...accumulator, ...currentValue.data]);
-      }, []);
+      const newResponse = await ExpandExcelFiles({ files: data?.files });
       if (newResponse?.length) {
         if (SearchedRef.current) {
           SearchedRef.current.setSubjects({
             SearchedResult: newResponse,
-            allImportedDataFromExcel: filesData,
           });
         }
       }
@@ -120,7 +87,7 @@ export default function MainCheckURLForm({ SearchedRef }) {
             <Typography variant="button" sx={{ width: 1 }}>
               Drop all excel files here Excel should like below
             </Typography>
-            <Divider orientation="horizontal" sx={{ mx: 6 }} variant="fullWidth" />
+            <Divider orientation="horizontal" sx={{}} variant="fullWidth" />
             <Box sx={{ display: 'flex', width: 1, height: 30, justifyContent: 'center', alignItems: 'center' }}>
               <Divider orientation="vertical" sx={{ mx: 1 }} variant="fullWidth" />
               Key
@@ -128,9 +95,11 @@ export default function MainCheckURLForm({ SearchedRef }) {
               Difficulty
               <Divider orientation="vertical" sx={{ mx: 2 }} variant="fullWidth" />
               SearchRate
+              <Divider orientation="vertical" sx={{ mx: 2 }} variant="fullWidth" />
+              organic
               <Divider orientation="vertical" sx={{ mx: 1 }} variant="fullWidth" />
             </Box>
-            <Divider orientation="horizontal" sx={{ mx: 6 }} variant="fullWidth" />
+            <Divider orientation="horizontal" sx={{}} variant="fullWidth" />
           </FormLabel>
           <UploadField name={'files'} setFormValue={setValue} getValues={getValues} />
         </Stack>

@@ -2,7 +2,7 @@ import * as Yup from 'yup';
 // form
 import { useForm } from 'react-hook-form';
 // @mui
-import { Stack, Alert, FormLabel, Typography, Divider, Box } from '@mui/material';
+import { Stack, Alert, FormLabel, Typography, Divider, Box, Tooltip } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import XLSX from 'sheetjs-style';
 
@@ -90,13 +90,29 @@ export default function MainCheckURLForm({ SearchedRef }) {
             <Divider orientation="horizontal" sx={{}} variant="fullWidth" />
             <Box sx={{ display: 'flex', width: 1, height: 30, justifyContent: 'center', alignItems: 'center' }}>
               <Divider orientation="vertical" sx={{ mx: 1 }} variant="fullWidth" />
-              Key
+              <Tooltip title="Search key column">
+                <Typography>Key</Typography>
+              </Tooltip>
               <Divider orientation="vertical" sx={{ mx: 2 }} variant="fullWidth" />
-              Difficulty
+              <Tooltip title="Difficulty column Range between  0 - 100">
+                <Typography>Difficulty</Typography>
+              </Tooltip>
               <Divider orientation="vertical" sx={{ mx: 2 }} variant="fullWidth" />
-              SearchRate
+              <Tooltip title="SearchRate column type should be number">
+                <Typography>SearchRate</Typography>
+              </Tooltip>
               <Divider orientation="vertical" sx={{ mx: 2 }} variant="fullWidth" />
-              organic
+              <Tooltip
+                title={
+                  <>
+                    Links column values should be like below <br />
+                    link1 , link2 , link3 , .....{' '}
+                  </>
+                }
+              >
+                <Typography>organic</Typography>
+              </Tooltip>
+
               <Divider orientation="vertical" sx={{ mx: 1 }} variant="fullWidth" />
             </Box>
             <Divider orientation="horizontal" sx={{}} variant="fullWidth" />

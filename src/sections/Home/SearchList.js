@@ -84,7 +84,6 @@ export default function SearchList({ subjects }) {
   useEffect(() => {
     if (subjects?.SearchedResult?.length) {
       const { SearchedResult } = subjects;
-
       const AllComparedGroupKeys = new Array();
 
       const CombinedData = SearchedResult.reduce((accumulator, currentValue) => {
@@ -101,7 +100,7 @@ export default function SearchList({ subjects }) {
 
         SearchedResult.forEach((item) => {
           if (item?.Query !== currentValue?.Query) {
-            const intersections = _.intersectionBy(currentValue.organic, item.organic, 'link');
+            const intersections = _.intersection(currentValue.organic, item.organic);
             const SimilarityPercantage = Math.round((100 / currentValue?.organic?.length) * intersections.length);
             if (
               SimilarityPercantage >= comparePercentage &&
@@ -141,7 +140,9 @@ export default function SearchList({ subjects }) {
         return accumulator;
       }, []);
       debugger;
-      setComparedList(CombinedData);
+      setComparedList(
+        CombinedData.sort((item1, item2) => item2?.SimilarityChildrens?.length - item1?.SimilarityChildrens?.length)
+      );
       setPage(0);
     }
   }, [subjects, comparePercentage]);

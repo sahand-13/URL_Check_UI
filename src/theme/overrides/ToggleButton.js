@@ -23,7 +23,8 @@ export default function ToggleButton(theme) {
           props: { color: 'standard' },
           style: {
             '&.Mui-selected': {
-              backgroundColor: theme.palette.action.selected,
+              backgroundColor: theme.palette.primary.main,
+              color: theme.palette.background.paper,
             },
           },
         },
@@ -40,7 +41,6 @@ export default function ToggleButton(theme) {
         root: {
           borderRadius: theme.shape.borderRadius,
           backgroundColor: theme.palette.background.paper,
-          border: `solid 1px ${theme.palette.grey[500_12]}`,
           '& .MuiToggleButton-root': {
             margin: 4,
             borderColor: 'transparent !important',

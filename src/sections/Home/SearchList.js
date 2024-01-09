@@ -22,8 +22,8 @@ import {
   Box,
   CardContent,
   IconButton,
+  CircularProgress,
 } from '@mui/material';
-
 // components
 
 // import Iconify from '../../../components/Iconify';
@@ -37,6 +37,10 @@ import SimilarityList from './Similarity/SimilarityList';
 import _ from 'lodash';
 import Iconify from '../../components/Iconify';
 import RowComponent from './RowComponent';
+import useURLCheck from '../../hooks/useURLCheck';
+import axiosInstance from '../../utils/axios';
+import { useSnackbar } from 'notistack';
+import Pako from 'pako';
 
 // ----------------------------------------------------------------------
 
@@ -51,8 +55,11 @@ const TABLE_HEAD = [
 
 // ----------------------------------------------------------------------
 
-export default function SearchList({ subjects }) {
+export default function SearchList() {
   const theme = useTheme();
+  const [loading, setLoading] = useState(false);
+  const { enqueueSnackbar } = useSnackbar();
+  const { selectedDB } = useURLCheck();
   const [comparedList, setComparedList] = useState([]);
 
   const [isGroupBy, setIsGroupBy] = useState(false);
@@ -69,83 +76,31 @@ export default function SearchList({ subjects }) {
 
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  const getSimilarity = ({ mainOrganics, subjectOrganics }) => {
-    return subjectOrganics.reduce((accumulator, currentValue) => {
-      let newAccumulator = accumulator;
-      mainOrganics.forEach((mainOrganic) => {
-        if (mainOrganic?.link === currentValue?.link) {
-          newAccumulator++;
-        }
-      });
-      return newAccumulator;
-    }, 0);
-  };
-
   useEffect(() => {
-    if (subjects?.SearchedResult?.length) {
-      const { SearchedResult } = subjects;
-      const AllComparedGroupKeys = new Array();
+    setLoading(true);
+    axiosInstance
+      .get('/api/excel/exceldata', {
+        params: { Similarity: comparePercentage, DBNames: JSON.stringify(selectedDB) },
+        responseType: 'arraybuffer',
+      })
+      .then((response) => {
+        const uint8Array = new Uint8Array(response.data);
 
-      const CombinedData = SearchedResult.reduce((accumulator, currentValue) => {
-        const FindInExcelData = SearchedResult?.find((x) => x?.Query === currentValue?.Query);
-        const newObject = {
-          id: uuidv4(),
-          SearchKey: currentValue?.Query,
-          organic: [...currentValue.organic],
-          SimilarityChildrens: [],
-          Difficulty: FindInExcelData?.Difficulty || 0,
-          SearchRate: FindInExcelData?.SearchRate || 0,
-        };
-        const SearchKeysArray = new Array(currentValue?.Query);
+        // Decode the Uint8Array to a string
+        const decoder = new TextDecoder('utf-8');
+        const decodedData = decoder.decode(uint8Array);
 
-        SearchedResult.forEach((item) => {
-          if (item?.Query !== currentValue?.Query) {
-            const intersections = _.intersection(currentValue.organic, item.organic);
-            const SimilarityPercantage = Math.round((100 / currentValue?.organic?.length) * intersections.length);
-            if (
-              SimilarityPercantage >= comparePercentage &&
-              intersections?.length &&
-              !newObject.SimilarityChildrens.find((item) => item?.SearchKey === item?.Query)
-            ) {
-              const itemFindInExcelData = SearchedResult?.find((x) => x?.Query === item?.Query);
-              SearchKeysArray.push(item?.Query);
-              newObject.SimilarityChildrens.push({
-                id: uuidv4(),
-                ParentSearchKey: newObject?.SearchKey,
-                ParentSearchLinkLength: currentValue?.organic?.length,
-                SearchKey: item?.Query,
-                SearchLinkLength: item?.organic?.length,
-                organic: [...item?.organic],
-                Similarity: intersections?.length,
-                SimilarityLinks: intersections,
-                Difficulty: itemFindInExcelData?.Difficulty || 0,
-                SearchRate: itemFindInExcelData?.SearchRate || 0,
-              });
-            }
-          }
-        });
-        let IsExistGroup = 0;
-        AllComparedGroupKeys.forEach((item) => {
-          const isEqual = _.difference(SearchKeysArray, item);
-          if (!isEqual.length) {
-            IsExistGroup += 1;
-          }
-        });
+        // Parse the JSON data
+        const jsonData = JSON.parse(decodedData);
+        setComparedList(jsonData);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setLoading(false);
 
-        if (!Boolean(IsExistGroup)) {
-          AllComparedGroupKeys.push(SearchKeysArray);
-          accumulator.push(newObject);
-        }
-
-        return accumulator;
-      }, []);
-      debugger;
-      setComparedList(
-        CombinedData.sort((item1, item2) => item2?.SimilarityChildrens?.length - item1?.SimilarityChildrens?.length)
-      );
-      setPage(0);
-    }
-  }, [subjects, comparePercentage]);
+        enqueueSnackbar('Something went wrong', { variant: 'error' });
+      });
+  }, [comparePercentage, selectedDB]);
 
   const handleRequestSort = (property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -169,10 +124,9 @@ export default function SearchList({ subjects }) {
   const isNotFound = !filteredItems.length && Boolean(filterName);
 
   return (
-    <Card sx={{ width: '65%', height: 1 }}>
+    <Card sx={{ width: '95%', height: 1, mx: 'auto' }}>
       <CardContent>
         <ListToolbar
-          mainSubject={subjects?.mainSubject}
           comparedList={comparedList}
           filterName={filterName}
           isGroupBy={isGroupBy}
@@ -194,7 +148,7 @@ export default function SearchList({ subjects }) {
               />
               <TableBody>
                 {filteredItems.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
-                  return <RowComponent key={row?.id} row={row} />;
+                  return <RowComponent key={row?.ID} row={row} />;
                 })}
                 {emptyRows > 0 && (
                   <TableRow style={{ height: 53 * emptyRows }}>
@@ -202,6 +156,15 @@ export default function SearchList({ subjects }) {
                   </TableRow>
                 )}
               </TableBody>
+              {loading && (
+                <TableBody>
+                  <TableRow>
+                    <TableCell align="center" colSpan={6} sx={{ py: 3 }}>
+                      <CircularProgress />
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              )}
               {isNotFound && (
                 <TableBody>
                   <TableRow>

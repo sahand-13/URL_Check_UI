@@ -27,7 +27,6 @@ ListToolbar.propTypes = {
 };
 
 export default function ListToolbar({
-  mainSubject,
   comparedList,
   filterName,
   onFilterName,
@@ -150,7 +149,7 @@ export default function ListToolbar({
     // const wb = { Sheets: { data: ws }, SheetNames: ['data'] };
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
     const data = new Blob([excelBuffer], { type: fileType });
-    FileSaver.saveAs(data, (mainSubject?.searchParameters?.q ?? 'data') + fileExtention);
+    FileSaver.saveAs(data, 'data' + fileExtention);
   };
 
   return (

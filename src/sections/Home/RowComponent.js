@@ -7,11 +7,11 @@ import CollapseChilds from './Similarity/CollapseChilds';
 const RowComponent = ({ row }) => {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
-  const { id, organic, SimilarityChildrens, SearchRate, SearchKey, Difficulty } = row;
+  const { ID, organic, SimilarityChildrens, SearchRate, Key, Difficulty } = row;
   const SimilarityJoin =
     SimilarityChildrens?.length > 0 &&
     _.join(
-      SimilarityChildrens?.map((item) => item?.SearchKey),
+      SimilarityChildrens?.map((item) => item?.Key),
       ' - '
     );
   return (
@@ -28,7 +28,7 @@ const RowComponent = ({ row }) => {
         )}
         <TableCell sx={{ display: 'flex', alignItems: 'center' }}>
           <Typography variant="subtitle2" noWrap>
-            {SearchKey}
+            {Key}
           </Typography>
         </TableCell>
         <TableCell align="left">

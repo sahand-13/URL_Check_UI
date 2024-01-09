@@ -37,10 +37,10 @@ import ListHead from '../ListHead';
 // ----------------------------------------------------------------------
 
 const TABLE_HEAD = [
-  { id: 'SecondarySubject', label: 'Secondary Subject', alignRight: false },
-  { id: 'SearchRate', label: 'Search Rate', alignRight: false },
-  { id: 'Links', label: 'Links', alignRight: false },
-  { id: 'Similarity', label: 'Similarity', alignRight: false },
+  { ID: 'SecondarySubject', label: 'Secondary Subject', alignRight: false },
+  { ID: 'SearchRate', label: 'Search Rate', alignRight: false },
+  { ID: 'Links', label: 'Links', alignRight: false },
+  { ID: 'Similarity', label: 'Similarity', alignRight: false },
 ];
 
 // ----------------------------------------------------------------------
@@ -88,7 +88,7 @@ export default function CollapseChilds({ Childs, parentData }) {
   return (
     <>
       <Scrollbar>
-        <TableContainer sx={{ minWidth: 750, maxWidth: 750 }}>
+        <TableContainer sx={{ maxWidth: '95%' }}>
           <Table>
             <ListHead
               order={order}
@@ -100,23 +100,24 @@ export default function CollapseChilds({ Childs, parentData }) {
             />
             <TableBody>
               {newfilteredItems.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
+                debugger;
                 const {
-                  id,
+                  ID,
                   ParentSearchKey,
                   ParentSearchLinkLength,
-                  SearchKey,
+                  Key,
                   SearchLinkLength,
-                  organic,
+                  OrganicList,
                   Similarity,
                   Difficulty,
                   SearchRate,
                   SimilarityLinks,
                 } = row;
                 return (
-                  <TableRow hover key={id} tabIndex={-1} role="checkbox">
+                  <TableRow hover Key={ID} tabIndex={-1} role="checkbox">
                     <TableCell sx={{ display: 'flex', alignItems: 'center' }}>
                       <Typography variant="subtitle2" noWrap>
-                        {SearchKey}
+                        {Key}
                       </Typography>
                     </TableCell>
                     <TableCell align="left">
@@ -131,8 +132,8 @@ export default function CollapseChilds({ Childs, parentData }) {
                             sx={{ width: 1000 }}
                             title={
                               <Box sx={{ display: 'block', width: 1 }}>
-                                {organic?.length &&
-                                  organic?.map((item) => {
+                                {OrganicList?.length &&
+                                  OrganicList?.map((item) => {
                                     return (
                                       <Box
                                         sx={{
@@ -144,13 +145,7 @@ export default function CollapseChilds({ Childs, parentData }) {
                                         }}
                                       >
                                         <Typography variant="button" sx={{ mx: 1 }}>
-                                          {item?.title}
-                                        </Typography>
-                                        <Typography variant="button" sx={{ mx: 1 }}>
-                                          {item?.link}
-                                        </Typography>
-                                        <Typography variant="button" sx={{ mx: 1, width: 200 }}>
-                                          Position: {item?.position}
+                                          {item}
                                         </Typography>
                                       </Box>
                                     );
@@ -165,8 +160,8 @@ export default function CollapseChilds({ Childs, parentData }) {
                             sx={{ width: 1000 }}
                             title={
                               <Box sx={{ display: 'block', width: 1 }}>
-                                {organic?.length &&
-                                  organic?.map((item) => {
+                                {OrganicList?.length &&
+                                  OrganicList?.map((item) => {
                                     return (
                                       <Box
                                         sx={{
@@ -178,13 +173,7 @@ export default function CollapseChilds({ Childs, parentData }) {
                                         }}
                                       >
                                         <Typography variant="button" sx={{ mx: 1 }}>
-                                          {item?.title}
-                                        </Typography>
-                                        <Typography variant="button" sx={{ mx: 1 }}>
-                                          {item?.link}
-                                        </Typography>
-                                        <Typography variant="button" sx={{ mx: 1, width: 200 }}>
-                                          Position: {item?.position}
+                                          {item}
                                         </Typography>
                                       </Box>
                                     );
@@ -226,7 +215,7 @@ export default function CollapseChilds({ Childs, parentData }) {
                               </Box>
                             }
                           >
-                            <div>{Similarity}</div>
+                            <div>{SimilarityLinks.length}</div>
                           </CustomWidthTooltip>
                         </Typography>
                       </Box>
@@ -234,15 +223,10 @@ export default function CollapseChilds({ Childs, parentData }) {
                     <TableCell align="left">
                       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                         <Box sx={{ width: '80%', mr: 1 }}>
-                          <LinearProgress
-                            value={Math.round((100 / ParentSearchLinkLength) * Similarity)}
-                            variant="determinate"
-                          />
+                          <LinearProgress value={Similarity} variant="determinate" />
                         </Box>
                         <Box sx={{ minWidth: '20%' }}>
-                          <Typography variant="body2" color="text.secondary">{`${Math.round(
-                            (100 / ParentSearchLinkLength) * Similarity
-                          )}%`}</Typography>
+                          <Typography variant="body2" color="text.secondary">{`${Similarity}%`}</Typography>
                         </Box>
                       </Box>
                     </TableCell>

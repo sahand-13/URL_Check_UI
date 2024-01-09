@@ -2,7 +2,9 @@ import axios from 'axios';
 
 // ----------------------------------------------------------------------
 
-const axiosInstance = axios.create({ baseURL: 'https://localhost:44302/' || '' });
+const axiosInstance = axios.create({
+  baseURL: 'https://localhost:44302/',
+});
 
 axiosInstance.interceptors.response.use(
   (response) => response,

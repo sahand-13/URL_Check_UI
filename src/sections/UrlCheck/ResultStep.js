@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import axiosInstance from '../../utils/axios';
 import { Box, Button, Card, CircularProgress, IconButton, Stack, Typography } from '@mui/material';
 import Iconify from '../../components/Iconify';
+import { useSnackbar } from 'notistack';
 
 const ResultStep = () => {
   const [Datasource, setDataSource] = useState();
   const [loading, setLoading] = useState(false);
   const [refresh, setRefresh] = useState(false);
+  const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
     setLoading(true);
@@ -20,7 +22,6 @@ const ResultStep = () => {
       })
       .catch((error) => {
         enqueueSnackbar('Something went wrong', { variant: 'error' });
-        setSelectedDB([]);
         setLoading(false);
       });
   }, [refresh]);

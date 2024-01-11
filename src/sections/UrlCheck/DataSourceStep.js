@@ -25,6 +25,7 @@ const DataSourceStep = () => {
   const { enqueueSnackbar } = useSnackbar();
   const { selectedDB, setSelectedDB, setActiveStep } = useURLCheck();
   const [comparePercentage, setComparePercentage] = useState(50);
+  const [keysPercentage, setKeysPercentage] = useState(100);
   const [refresh, setRefresh] = useState(false);
 
   useEffect(() => {
@@ -55,7 +56,11 @@ const DataSourceStep = () => {
     if (selectedDB?.length > 0) {
       axiosInstance
         .get('/api/excel/CreateExcel', {
-          params: { Similarity: comparePercentage, DBNames: JSON.stringify(selectedDB) },
+          params: {
+            Similarity: comparePercentage,
+            DBNames: JSON.stringify(selectedDB),
+            KeysComparePercentage: keysPercentage,
+          },
         })
         .then((response) => {
           enqueueSnackbar(response.data.data, { variant: 'success', autoHideDuration: null });
@@ -128,7 +133,7 @@ const DataSourceStep = () => {
       </Card>
 
       <Card sx={{ width: '50%' }}>
-        <Stack sx={{ p: 3 }} spacing={3} justifyContent={'center'}>
+        <Stack sx={{ pt: 3 }} spacing={1} justifyContent={'center'}>
           <Box sx={{ m: 2, width: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
             <Typography variant="caption">Similarity </Typography>
             <Slider
@@ -140,6 +145,20 @@ const DataSourceStep = () => {
               valueLabelDisplay="auto"
             />
             <Typography variant="caption"> {comparePercentage}%</Typography>
+          </Box>
+        </Stack>
+        <Stack sx={{ p: 1 }} justifyContent={'center'}>
+          <Box sx={{ m: 2, width: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
+            <Typography variant="caption"> Keys Grouping </Typography>
+            <Slider
+              sx={{ width: '75%' }}
+              defaultValue={keysPercentage}
+              onChange={(e) => setKeysPercentage(e.target.value)}
+              aria-label="Default"
+              valueLabelFormat={(e) => `${e}% Similarity`}
+              valueLabelDisplay="auto"
+            />
+            <Typography variant="caption"> {keysPercentage}%</Typography>
           </Box>
         </Stack>
         <Box sx={{ display: 'flex', justifyContent: 'center', m: 2 }}>

@@ -63,7 +63,7 @@ const DataSourceStep = () => {
           },
         })
         .then((response) => {
-          enqueueSnackbar(response.data.data, { variant: 'success', autoHideDuration: null });
+          enqueueSnackbar(response.data.data, { variant: 'success' });
         });
     }
   };
